@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
+#include "../util/generator.h"
 
 
 double* reverse_array(const double arr[], int size) {
@@ -31,11 +32,14 @@ double l2_norm(double *vec1, double *vec2, int size) {
 }
 
 // Funzione per eseguire l'algoritmo di Sinkhorn-Knopp
-void sinkhorn_knopp(double *matrix, int size, double epsilon, int max_iterations) {
+void sinkhorn_knopp(double **matrix, int size, double epsilon, int max_iterations) {
     // Allocazione di memoria per i vettori di scaling D e D'
     double *D = (double *)malloc(size * sizeof(double));
     double *D_prime = (double *)malloc(size * sizeof(double));
-    double *approx_matrix = (double *)malloc(size * size * sizeof(double));
+    double** approx_matrix = malloc(size * sizeof(double*));
+    for (int i = 0; i < size; i++) {
+        approx_matrix[i] = malloc(size * sizeof(double));
+    }
 
     // Inizializzazione dei vettori D e D' con valori tutti uguali a 1
     for (int i = 0; i < size; i++) {
@@ -53,7 +57,7 @@ void sinkhorn_knopp(double *matrix, int size, double epsilon, int max_iterations
         for (int i = 0; i < size; i++) {
             double row_sum = 0.0;
             for (int j = 0; j < size; j++) {
-                row_sum += matrix[i * size + j] * D_prime[j];
+                row_sum += matrix[i][j] * D_prime[j];
             }           
             D[i] = 1.0 / row_sum;
         }
@@ -62,7 +66,7 @@ void sinkhorn_knopp(double *matrix, int size, double epsilon, int max_iterations
         for (int j = 0; j < size; j++) {
             double col_sum = 0.0;
             for (int i = 0; i < size; i++) {
-                col_sum += matrix[i * size + j] * D[i];
+                col_sum += matrix[i][j] * D[i];
             }
             D_prime[j] = 1.0 / col_sum;
         }
@@ -71,7 +75,7 @@ void sinkhorn_knopp(double *matrix, int size, double epsilon, int max_iterations
         // Verifica della convergenza
         for (int i = 0; i < size; i++) {
             for (int j = 0; j < size; j++) {
-                approx_matrix[i * size + j] = D[i] * matrix[i * size + j] * D_prime[j];
+                approx_matrix[i][j] = D[i] * matrix[i][j] * D_prime[j];
             }
         }
         double norm = l2_norm(D,D_prime,size);
@@ -91,7 +95,7 @@ void sinkhorn_knopp(double *matrix, int size, double epsilon, int max_iterations
         printf("%lf ", D[i]);
     }
 
-    printf("\nMatrice D':\n");
+    printf("\n\nMatrice D':\n");
     for (int i = 0; i < size; i++) {
         printf("%lf ", D_prime[i]);
     }
@@ -101,23 +105,23 @@ void sinkhorn_knopp(double *matrix, int size, double epsilon, int max_iterations
 
     // Controllo se è doubly stochastic
 
-    //somma delle righe
-    printf("\nSomma delle righe:\n");
+    // Somma delle righe
+    printf("\n\nSomma delle righe:\n");
     for (int i = 0; i < size; i++) {
         float sum=0;
         for (int j = 0; j < size; j++) {
-            sum+=approx_matrix[i*size+j];
-            printf("%f ",approx_matrix[i * size + j]);
+            sum+=approx_matrix[i][j];
+            //printf("%f ",approx_matrix[i][j]);
         }
-        printf("Somma: %f\n",sum);
+        printf("%f ",sum);
     }
 
-    //somma delle colonne
-    printf("\nSomma delle colonne:\n");
+    // Somma delle colonne
+    printf("\n\nSomma delle colonne:\n");
     for (int i = 0; i < size; i++) {
         float sum=0;
         for (int j = 0; j < size; j++) {
-            sum+=approx_matrix[j*size+i];
+            sum+=approx_matrix[j][i];
         }
         printf("%f ",sum);
     }
@@ -129,32 +133,49 @@ void sinkhorn_knopp(double *matrix, int size, double epsilon, int max_iterations
 }
 
 
-int main() {
-    int size = 10; // Dimensione della matrice quadrata
-    double matrix[10][10] = { // Inserire la matrice con elementi positivi
-        {1, 2, 1, 2, 0.2,1, 2, 1, 2, 0.2},
-        {5, 6, 0.4, 0.3, 0.1,5, 6, 0.4, 0.3, 0.1},
-        {5, 6, 0.4, 0.3, 0.1,5, 6, 0.4, 0.3, 0.1},
-        {5, 6, 0.4, 0.3, 0.1,5, 6, 0.4, 0.3, 0.1},
-        {2.0, 7, 10, 0.1, 1.0,2.0, 7, 10, 0.1, 1.0},
-        {1, 2, 1, 2, 0.2,1, 2, 1, 2, 0.2},
-        {5, 6, 0.4, 0.3, 0.1,5, 6, 0.4, 0.3, 0.1},
-        {5, 6, 0.4, 0.3, 0.1,5, 6, 0.4, 6, 0.1},
-        {5, 6, 0.4, 0.3, 0.1,5, 6, 0.4, 0.3, 0.1},
-        {2.0, 7, 10, 0.1, 1.0,2.0, 7, 10, 0.1, 1.0}
-    };
+int main(int argc, char *argv[]) {
+    int size = 100;            // Dimensione della matrice quadrata
+    double epsilon = 1e-6;     // Soglia di convergenza
+    int max_iterations = 50;   // Numero massimo di iterazioni
 
-    double epsilon = 1e-6; // Soglia di convergenza
-    int max_iterations = 50; // Numero massimo di iterazioni
+    scriviNumeriSuFileTxt(argv[1],size*size);  // Scrive matrice random su file
+
+    FILE* file = fopen(argv[1], "r");
+    if (!file) {
+        perror("Errore durante l'apertura del file");
+        exit(EXIT_FAILURE);
+    }
+
+    // Alloca matrice
+    double** matrix = malloc(size * sizeof(double*));
+    for (int i = 0; i < size; i++) {
+        matrix[i] = malloc(size * sizeof(double));
+    }
+
+    // Legge i valori dal file
+    for (int i = 0; i < size; i++) {
+        for (int j = 0; j < size; j++) {
+            fscanf(file, "%lf", &matrix[i][j]);
+        }
+    }
+
+    // Chiude il file
+    fclose(file);
 
     clock_t start = clock();
 
     // Esecuzione dell'algoritmo di Sinkhorn-Knopp
-    sinkhorn_knopp(&matrix[0][0], size, epsilon, max_iterations);
+    sinkhorn_knopp(matrix, size, epsilon, max_iterations);
 
     clock_t end = clock();
 
     printf("\nTempo di esecuzione: %f", (double)(end-start)/CLOCKS_PER_SEC);
+
+    // Dealloca la matrice
+    for (int i = 0; i < size; i++) {
+        free(matrix[i]);
+    }
+    free(matrix);
 
     return 0;
 }
