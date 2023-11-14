@@ -5,22 +5,6 @@
 #include "../util/generator.h"
 
 
-double* reverse_array(const double arr[], int size) {
-    double* reversed_array = malloc(size * sizeof(double));
-
-    if (reversed_array == NULL) {
-        printf("Errore: memoria non disponibile.\n");
-        exit(1);
-    }
-
-    int end = size - 1;
-    for (int i = 0; i < size; i++) {
-        reversed_array[i] = arr[end - i];
-    }
-
-    return reversed_array;
-}
-
 // Funzione per calcolare la norma L2 tra due vettori
 double l2_norm(double *vec1, double *vec2, int size) {
     double sum = 0.0;
@@ -31,20 +15,47 @@ double l2_norm(double *vec1, double *vec2, int size) {
     return sqrt(sum);
 }
 
+// Funzione per calcolare la somma delle righe di una matrice
+void calcolaSommaRighe(double **matrix, double *sommaRighe,int size) {
+    for (int i = 0; i < size; i++) {
+        sommaRighe[i] = 0;  // Inizializza la somma per ogni riga
+        for (int j = 0; j < size; j++) {
+            sommaRighe[i] += matrix[i][j];
+        }
+    }
+}
+
+// Funzione per calcolare la somma delle colonne di una matrice
+void calcolaSommaColonne(double **matrix, double *sommaColonne,int size) {
+    for (int j = 0; j < size; j++) {
+        sommaColonne[j] = 0;  // Inizializza la somma per ogni colonna
+        for (int i = 0; i < size; i++) {
+            sommaColonne[j] += matrix[i][j];
+        }
+    }
+}
+
+
 // Funzione per eseguire l'algoritmo di Sinkhorn-Knopp
 void sinkhorn_knopp(double **matrix, int size, double epsilon, int max_iterations) {
+
     // Allocazione di memoria per i vettori di scaling D e D'
-    double *D = (double *)malloc(size * sizeof(double));
-    double *D_prime = (double *)malloc(size * sizeof(double));
+    double *D = malloc(size * sizeof(double));
+    double *D_prime = malloc(size * sizeof(double));
     double** approx_matrix = malloc(size * sizeof(double*));
     for (int i = 0; i < size; i++) {
         approx_matrix[i] = malloc(size * sizeof(double));
     }
+    // Allocazione vettori per somma colonne e righe ad ogni iterazione
+    double *col_sums = malloc(size * sizeof(double));
+    double *row_sums = malloc(size * sizeof(double));
+    double *ones = malloc(size * sizeof(double));
 
     // Inizializzazione dei vettori D e D' con valori tutti uguali a 1
     for (int i = 0; i < size; i++) {
         D[i] = 1.0;
         D_prime[i] = 1.0;
+        ones[i]=1.0;
     }
 
     // Variabile per conteggiare il numero di iterazioni
@@ -53,90 +64,78 @@ void sinkhorn_knopp(double **matrix, int size, double epsilon, int max_iteration
     // Ciclo di iterazione dell'algoritmo
     while (iteration < max_iterations) {
 
-        // Scaling delle righe di D
-        for (int i = 0; i < size; i++) {
-            double row_sum = 0.0;
-            for (int j = 0; j < size; j++) {
-                row_sum += matrix[i][j] * D_prime[j];
-            }           
-            D[i] = 1.0 / row_sum;
-        }
-        
-        // Scaling delle colonne di D'
-        for (int j = 0; j < size; j++) {
-            double col_sum = 0.0;
+        if (iteration%2==0){
+            // Normalizza le righe
             for (int i = 0; i < size; i++) {
-                col_sum += matrix[i][j] * D[i];
+                double row_sum = 0.0;
+                for (int j = 0; j < size; j++) {
+                    row_sum += matrix[i][j] * D_prime[j];
+                }           
+                D[i] = 1.0 / row_sum;
             }
-            D_prime[j] = 1.0 / col_sum;
         }
+        else {
+            // Normalizza le colonne
+            for (int j = 0; j < size; j++) {
+                double col_sum = 0.0;
+                for (int i = 0; i < size; i++) {
+                    col_sum += matrix[i][j] * D[i];
+                }
+                D_prime[j] = 1.0 / col_sum;
+            }
+        } 
 
-
-        // Verifica della convergenza
+        /******************** Verifica convergenza **********************/
         for (int i = 0; i < size; i++) {
             for (int j = 0; j < size; j++) {
                 approx_matrix[i][j] = D[i] * matrix[i][j] * D_prime[j];
             }
         }
-        double norm = l2_norm(D,D_prime,size);
 
-        printf("%f ",norm);
+        calcolaSommaColonne(approx_matrix,col_sums,size);
+        calcolaSommaRighe(approx_matrix,row_sums,size);
 
-        if (norm < epsilon) {
+        double err_row=l2_norm(row_sums,ones,size);
+        double err_col=l2_norm(col_sums,ones,size);
+
+        printf("%f %f; ",err_row,err_col);
+
+        if (err_row < epsilon && err_col <epsilon) {
             break;
         }
 
         iteration++;
     }
 
-    // Stampa delle matrici diagonali D e D'
-    printf("\nMatrice D:\n");
+    /************** Controlla se è doubly stochastic ***************/
+    printf("\n\nLa somma delle righe: ");
     for (int i = 0; i < size; i++) {
-        printf("%lf ", D[i]);
+        printf("%.3f ",row_sums[i]);
     }
-
-    printf("\n\nMatrice D':\n");
+    
+    printf("\n\nLa somma delle colonne: ");
     for (int i = 0; i < size; i++) {
-        printf("%lf ", D_prime[i]);
+         printf("%.3f ",col_sums[i]);
     }
-
-    double *inv_D = reverse_array(D,size);
-    double *inv_D_prime = reverse_array(D_prime,size);
-
-    // Controllo se è doubly stochastic
-
-    // Somma delle righe
-    printf("\n\nSomma delle righe:\n");
-    for (int i = 0; i < size; i++) {
-        float sum=0;
-        for (int j = 0; j < size; j++) {
-            sum+=approx_matrix[i][j];
-            //printf("%f ",approx_matrix[i][j]);
-        }
-        printf("%f ",sum);
-    }
-
-    // Somma delle colonne
-    printf("\n\nSomma delle colonne:\n");
-    for (int i = 0; i < size; i++) {
-        float sum=0;
-        for (int j = 0; j < size; j++) {
-            sum+=approx_matrix[j][i];
-        }
-        printf("%f ",sum);
-    }
+    
 
     // Deallocazione della memoria
     free(D);
     free(D_prime);
+    for (int i = 0; i < size; i++) {
+        free(approx_matrix[i]);
+    }
     free(approx_matrix);
+    free(row_sums);
+    free(col_sums);
+    free(ones);
 }
 
 
 int main(int argc, char *argv[]) {
-    int size = 100;            // Dimensione della matrice quadrata
-    double epsilon = 1e-6;     // Soglia di convergenza
-    int max_iterations = 50;   // Numero massimo di iterazioni
+    int size = 100;             // Dimensione della matrice quadrata
+    double epsilon = 1e-6;      // Soglia di convergenza
+    int max_iterations = 100;   // Numero massimo di iterazioni
 
     scriviNumeriSuFileTxt(argv[1],size*size);  // Scrive matrice random su file
 
