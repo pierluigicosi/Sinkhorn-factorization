@@ -1,12 +1,12 @@
 CC=mpicc
 CFLAGS=-g
 
-all: sinkhorn compiler
+all: sinkhorn
 
-sinkhorn: sinkhorn.o MyMPI.o
+sinkhorn: sinkhorn.o ../util/MyMPI.o ../util/generator.o
 	$(CC) $(CFLAGS) $^ -o $@
 
-sinkhorn.o: sinkhorn.c MyMPI.h
+sinkhorn.o: sinkhorn.c ../util/MyMPI.h ../util/generator.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:

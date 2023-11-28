@@ -82,6 +82,7 @@ void sinkhorn_knopp(double **matrix, int size, double epsilon, int max_iteration
                     col_sum += matrix[i][j] * D[i];
                 }
                 D_prime[j] = 1.0 / col_sum;
+                printf("%lf ",D_prime[j]);
             }
         } 
 
@@ -98,7 +99,7 @@ void sinkhorn_knopp(double **matrix, int size, double epsilon, int max_iteration
         double err_row=l2_norm(row_sums,ones,size);
         double err_col=l2_norm(col_sums,ones,size);
 
-        printf("%f %f; ",err_row,err_col);
+        printf("Errore sulle righe: %f sulle colonne: %f; \n",err_row,err_col);
 
         if (err_row < epsilon && err_col <epsilon) {
             break;
@@ -133,11 +134,11 @@ void sinkhorn_knopp(double **matrix, int size, double epsilon, int max_iteration
 
 
 int main(int argc, char *argv[]) {
-    int size = 100;             // Dimensione della matrice quadrata
+    int size = 5;               // Dimensione della matrice quadrata
     double epsilon = 1e-6;      // Soglia di convergenza
     int max_iterations = 100;   // Numero massimo di iterazioni
 
-    scriviNumeriSuFileTxt(argv[1],size*size);  // Scrive matrice random su file
+    //scriviNumeriSuFileTxt(argv[1],size*size);  // Scrive matrice random su file
 
     FILE* file = fopen(argv[1], "r");
     if (!file) {

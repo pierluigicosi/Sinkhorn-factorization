@@ -29,6 +29,7 @@
 
 /***************** MISCELLANEOUS FUNCTIONS *****************/
 
+void *my_malloc (int id, double bytes);
 void  terminate (int, char *);
 
 /*************** DATA DISTRIBUTION FUNCTIONS ***************/
@@ -36,20 +37,8 @@ void  terminate (int, char *);
 void replicate_block_vector (void *, int, void *,
         MPI_Datatype, MPI_Comm);
 void create_mixed_xfer_arrays (int, int, int, int**, int**);
+void scatter_arrays (int id, int p, int n, int **count, int **disp);
 void create_uniform_xfer_arrays (int, int, int, int**,int**);
-
-/****************** INPUT FUNCTIONS ************************/
-
-void read_checkerboard_matrix (char *, void ***, void **,
-        MPI_Datatype, int *, int *, MPI_Comm);
-void read_col_striped_matrix (char *, void ***, void **,
-        MPI_Datatype, int *, int *, MPI_Comm);
-void read_row_striped_matrix (char *, void ***, void **,
-        MPI_Datatype, int *, int *, MPI_Comm);
-void read_block_vector (char *, void **, MPI_Datatype,
-        int *, MPI_Comm);
-void read_replicated_vector (char *, void **, MPI_Datatype,
-        int *, MPI_Comm);
 
 /****************** OUTPUT FUNCTIONS ***********************/
 
