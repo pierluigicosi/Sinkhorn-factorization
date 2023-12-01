@@ -39,27 +39,3 @@ void scriviNumeriSuFileTxt(const char* filetxt, int numeroNumeri) {
     // Chiudi il file
     fclose(file);
 }
-
-// Funzione per scrivere numeri razionali su un file
-void scriviNumeriSuFileBin(const char* filebin, int dim) {
-    FILE* file = fopen(filebin, "w");
-    if (!file) {
-        perror("Errore durante l'apertura del file");
-        exit(EXIT_FAILURE);
-    }
-
-    fwrite(&dim, sizeof(int), 1, file);
-    fwrite(&dim, sizeof(int), 1, file);
-
-    srand(time(NULL));
-
-    // Scrivi i numeri razionali nel file di testo e in quello binario
-    for (int i = 0; i < dim*dim; i++) {
-        NumeroRazionale numeroRazionale = generaNumeroRazionaleCasuale();
-        double numero = (double)numeroRazionale.numeratore/numeroRazionale.denominatore;
-        fwrite(&numero, sizeof(int), 1, file);
-    }
-
-    // Chiudi il file
-    fclose(file);
-}

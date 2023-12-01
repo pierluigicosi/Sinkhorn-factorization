@@ -33,22 +33,5 @@ void *my_malloc (int id, double bytes);
 void  terminate (int, char *);
 
 /*************** DATA DISTRIBUTION FUNCTIONS ***************/
-
-void replicate_block_vector (void *, int, void *,
-        MPI_Datatype, MPI_Comm);
-void create_mixed_xfer_arrays (int, int, int, int**, int**);
-void scatter_arrays (int id, int p, int n, int **count, int **disp);
-void create_uniform_xfer_arrays (int, int, int, int**,int**);
-
-/****************** OUTPUT FUNCTIONS ***********************/
-
-void print_checkerboard_matrix (void **, MPI_Datatype, int,
-        int, MPI_Comm);
-void print_col_striped_matrix (void **, MPI_Datatype, int,
-        int, MPI_Comm);
-void print_row_striped_matrix (void **, MPI_Datatype, int,
-        int, MPI_Comm);
-void print_block_vector (void *, MPI_Datatype, int,
-        MPI_Comm);
-void print_replicated_vector (void *, MPI_Datatype, int,
-        MPI_Comm);
+void divide_array (int, int, int, int**, int**);
+void divide_matrix (int id, int p, int n, int **count, int **disp);
